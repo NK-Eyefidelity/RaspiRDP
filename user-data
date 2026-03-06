@@ -1,0 +1,38 @@
+#cloud-config
+
+# 1. System aktualisieren und Software installieren.
+package_update: true
+packages:
+  - freerdp2-x11
+  - yad
+  - wget
+
+# 2. Befehle ausführen, sobald die Pakete installiert sind
+runcmd:
+  # Grafikmodus von Wayland auf X11/Openbox umstellen
+  - raspi-config nonint do_wayland W1
+  
+  # Verzeichnisse für den Benutzer erstellen
+  - mkdir -p /home/administrator/kiosk_dateien
+  - mkdir -p /home/administrator/.config/autostart
+  
+  # Deine Dateien herunterladen und ausführbar machen
+  - wget -O /home/administrator/kiosk_dateien/rdp.sh "https://github.com/NK-Eyefidelity/RaspiRDP/blob/0fcc80bd5032324ca8af66ca0c7c2638352e6a6d/rdp.sh"
+  - wget -O /home/administrator/kiosk_dateien/icon.png "https://github.com/NK-Eyefidelity/RaspiRDP/blob/0fcc80bd5032324ca8af66ca0c7c2638352e6a6d/eye.png"
+  - chmod +x /home/administrator/kiosk_dateien/rdp.sh
+  
+  # Autostart-Eintrag für LXDE/Openbox erstellen
+  - |
+    cat <<EOF > /home/administrator/.config/autostart/kiosk_autostart.desktop
+    [Desktop Entry]
+    Type=Application
+    Name=KioskAutostart
+    Exec=/home/administrator/kiosk_dateien/rdp.sh
+    Terminal=false
+    EOF
+    
+  # Zugriffsrechte an deinen Benutzer übergeben
+  - chown -R administrator:administrator /home/administrator/kiosk_dateien /home/administrator/.config
+  
+  # Automatischen Neustart durchführen, um X11 zu aktivieren
+  - reboot
