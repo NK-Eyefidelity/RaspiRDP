@@ -20,7 +20,11 @@ rpi:
 # 1. System aktualisieren und Software installieren.
 package_update: true
 packages:
-  - freerdp3-x11  # <-- Geändert auf Version 3 für Trixie
+  - xserver-xorg       # <-- WICHTIG: Stellt den X-Server bereit
+  - x11-xserver-utils  # <-- WICHTIG: Stellt xset bereit (wird im rdp.sh/xsession genutzt)
+  - openbox            # <-- WICHTIG: Der Window-Manager für den Kiosk
+  - lightdm            # <-- WICHTIG: Handhabt den automatischen Login
+  - freerdp3-x11       # Das RDP Paket für Trixie
   - yad
   - wget
 
@@ -35,9 +39,10 @@ runcmd:
   # Grafikmodus von Wayland auf X11/Openbox umstellen
   - raspi-config nonint do_wayland W1
   
-  # NEU: Automatischen GUI-Login (Desktop Autologin) aktivieren
+  # Automatischen GUI-Login (Desktop Autologin) aktivieren
   - raspi-config nonint do_boot_behaviour B4
-  # NEU: Sicherstellen, dass LightDM den Benutzer "administrator" für den Autologin verwendet
+  
+  # Sicherstellen, dass LightDM den Benutzer "administrator" für den Autologin verwendet
   - sed -i 's/^#\?autologin-user=.*/autologin-user=administrator/' /etc/lightdm/lightdm.conf
   
   # Verzeichnisse für den Benutzer erstellen
@@ -66,5 +71,5 @@ runcmd:
   - chmod +x /home/administrator/.xsession
   - chown -R administrator:administrator /home/administrator/kiosk_dateien /home/administrator/.xsession
   
-  # Automatischen Neustart durchführen, um X11 zu aktivieren
+  # Automatischen Neustart durchführen, um alles zu aktivieren
   - reboot
