@@ -46,18 +46,20 @@ runcmd:
   # Skript ausführbar machen
   - chmod +x /home/administrator/kiosk_dateien/rdp.sh
   
-  # Autostart-Eintrag für LXDE/Openbox erstellen
+  # Kiosk-Sitzung (.xsession) erstellen, die den Desktop überspringt
   - |
-    cat <<EOF > /home/administrator/.config/autostart/kiosk_autostart.desktop
-    [Desktop Entry]
-    Type=Application
-    Name=KioskAutostart
-    Exec=/home/administrator/kiosk_dateien/rdp.sh
-    Terminal=false
+    cat <<'EOF' > /home/administrator/.xsession
+    #!/bin/bash
+    xset s off
+    xset s noblank
+    xset -dpms
+    openbox &
+    exec /home/administrator/kiosk_dateien/rdp.sh
     EOF
     
   # Zugriffsrechte an deinen Benutzer übergeben
-  - chown -R administrator:administrator /home/administrator/kiosk_dateien /home/administrator/.config
+  - chmod +x /home/administrator/.xsession
+  - chown -R administrator:administrator /home/administrator/kiosk_dateien /home/administrator/.xsession
   
   # Automatischen Neustart durchführen, um X11 zu aktivieren
   - reboot
