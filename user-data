@@ -20,7 +20,7 @@ rpi:
 # 1. System aktualisieren und Software installieren.
 package_update: true
 packages:
-  - freerdp2-x11
+  - freerdp3-x11  # <-- Geändert auf Version 3 für Trixie
   - yad
   - wget
 
@@ -29,11 +29,16 @@ runcmd:
   - [ rfkill, unblock, wifi ]
   - [ sh, -c, "for f in /var/lib/systemd/rfkill/*:wlan; do echo 0 > \"$f\"; done" ]
   
-  # NEU: Aktiv auf das Internet warten (pingt GitHub an, probiert es bis zu 30 Sekunden lang alle 2 Sekunden)
+  # Aktiv auf das Internet warten
   - [ sh, -c, "for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do ping -c1 raw.githubusercontent.com >/dev/null 2>&1 && break; sleep 2; done" ]
   
   # Grafikmodus von Wayland auf X11/Openbox umstellen
   - raspi-config nonint do_wayland W1
+  
+  # NEU: Automatischen GUI-Login (Desktop Autologin) aktivieren
+  - raspi-config nonint do_boot_behaviour B4
+  # NEU: Sicherstellen, dass LightDM den Benutzer "administrator" für den Autologin verwendet
+  - sed -i 's/^#\?autologin-user=.*/autologin-user=administrator/' /etc/lightdm/lightdm.conf
   
   # Verzeichnisse für den Benutzer erstellen
   - mkdir -p /home/administrator/kiosk_dateien
