@@ -69,6 +69,10 @@ runcmd:
   # Zugriffsrechte an deinen Benutzer übergeben
   - chmod +x /home/administrator/.xsession
   - chown -R administrator:administrator /home/administrator/kiosk_dateien /home/administrator/.xsession
-  
-  # Automatischen Neustart durchführen, um alles zu aktivieren
-  - reboot
+
+  # Reboot wenn Fertig
+  power_state:
+    mode: reboot
+    message: "Systemkonfiguration abgeschlossen. Neustart wird eingeleitet."
+    timeout: 10
+    condition: True
