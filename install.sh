@@ -31,3 +31,4 @@ Terminal=false
 EOF
 
 echo "Setup beendet. Bitte mit 'sudo reboot' neu starten."
+reboot
