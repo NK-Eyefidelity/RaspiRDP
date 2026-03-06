@@ -75,4 +75,4 @@ power_state:
   mode: reboot
   message: "Systemkonfiguration abgeschlossen. Neustart wird eingeleitet."
   timeout: 10
-    condition: True
+  condition: True
