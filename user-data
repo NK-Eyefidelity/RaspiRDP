@@ -70,9 +70,9 @@ runcmd:
   - chmod +x /home/administrator/.xsession
   - chown -R administrator:administrator /home/administrator/kiosk_dateien /home/administrator/.xsession
 
-  # Reboot wenn Fertig
-  power_state:
-    mode: reboot
-    message: "Systemkonfiguration abgeschlossen. Neustart wird eingeleitet."
-    timeout: 10
+# Reboot wenn Fertig
+power_state:
+  mode: reboot
+  message: "Systemkonfiguration abgeschlossen. Neustart wird eingeleitet."
+  timeout: 10
     condition: True
