@@ -2,7 +2,7 @@
 # === Konfiguration ===
 RDP_IP="192.168.0.7"
 RDP_DOMAIN="Reiners-immobilien.local"
-WINDOW_ICON="./eye.png"
+WINDOW_ICON="./icon.png"
 ADMIN_PASS="geheim123" # <--- HIER DEIN ADMIN-PASSWORT EINTRAGEN
 
 # Pfade für die LXDE/Openbox-Konfiguration
