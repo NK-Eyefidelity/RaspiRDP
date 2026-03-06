@@ -27,31 +27,30 @@ packages:
   - freerdp3-x11       # Das RDP Paket für Trixie
   - yad
   - wget
+  - ca-certificates
 
 # 2. Befehle ausführen, sobald die Pakete installiert sind
 runcmd:
   - [ rfkill, unblock, wifi ]
   - [ sh, -c, "for f in /var/lib/systemd/rfkill/*:wlan; do echo 0 > \"$f\"; done" ]
   
-  # Aktiv auf das Internet warten
-  - [ sh, -c, "for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do ping -c1 raw.githubusercontent.com >/dev/null 2>&1 && break; sleep 2; done" ]
+  # NEU: Erhöhte Wartezeit auf bis zu 90 Sekunden (45 Versuche x 2 Sekunden)
+  - [ bash, -c, "for ((i=1; i<=45; i++)); do ping -c1 raw.githubusercontent.com >/dev/null 2>&1 && break; sleep 2; done" ]
   
   # Grafikmodus von Wayland auf X11/Openbox umstellen
   - raspi-config nonint do_wayland W1
   
   # Automatischen GUI-Login (Desktop Autologin) aktivieren
   - raspi-config nonint do_boot_behaviour B4
-  
-  # Sicherstellen, dass LightDM den Benutzer "administrator" für den Autologin verwendet
   - sed -i 's/^#\?autologin-user=.*/autologin-user=administrator/' /etc/lightdm/lightdm.conf
   
   # Verzeichnisse für den Benutzer erstellen
   - mkdir -p /home/administrator/kiosk_dateien
   - mkdir -p /home/administrator/.config/autostart
   
-  # Deine Dateien herunterladen
-  - wget -O /home/administrator/kiosk_dateien/rdp.sh "https://raw.githubusercontent.com/NK-Eyefidelity/RaspiRDP/refs/heads/main/rdp.sh"
-  - wget -O /home/administrator/kiosk_dateien/icon.png "https://github.com/NK-Eyefidelity/RaspiRDP/blob/main/eye.png?raw=true"
+  # NEU: Wget mit automatischem Retry, falls das Netzwerk kurzzeitig abbricht
+  - wget --tries=10 --waitretry=3 --retry-connrefused -O /home/administrator/kiosk_dateien/rdp.sh "https://raw.githubusercontent.com/NK-Eyefidelity/RaspiRDP/refs/heads/main/rdp.sh"
+  - wget --tries=10 --waitretry=3 --retry-connrefused -O /home/administrator/kiosk_dateien/icon.png "https://github.com/NK-Eyefidelity/RaspiRDP/blob/main/eye.png?raw=true"
   
   # Skript ausführbar machen
   - chmod +x /home/administrator/kiosk_dateien/rdp.sh
