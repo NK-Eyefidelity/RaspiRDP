@@ -37,14 +37,19 @@ runcmd:
   # Automatischen GUI-Login (Desktop Autologin) aktivieren
   - raspi-config nonint do_boot_behaviour B4
   - sed -i 's/^#\?autologin-user=.*/autologin-user=administrator/' /etc/lightdm/lightdm.conf
+
+  # LightDM zwingen, die .xsession Datei zu nutzen anstatt den Standard-Desktop zu laden
+  - sed -i 's/^#\?user-session=.*/user-session=default/' /etc/lightdm/lightdm.conf
+  - update-alternatives --set x-session-manager /usr/bin/openbox-session || true
   
   # Verzeichnisse für den Benutzer erstellen
   - mkdir -p /home/administrator/kiosk_dateien
   - mkdir -p /home/administrator/.config/autostart
   
-  # NEU: Wget mit automatischem Retry, falls das Netzwerk kurzzeitig abbricht
-  - wget --tries=10 --waitretry=3 --retry-connrefused -O /home/administrator/kiosk_dateien/rdp.sh "https://raw.githubusercontent.com/NK-Eyefidelity/RaspiRDP/refs/heads/main/rdp.sh"
-  - wget --tries=10 --waitretry=3 --retry-connrefused -O /home/administrator/kiosk_dateien/icon.png "https://github.com/NK-Eyefidelity/RaspiRDP/blob/main/eye.png?raw=true"
+  # Wget mit automatischem Retry, sicher gekapselt für YAML
+  - [ sh, -c, "wget --tries=10 --waitretry=3 --retry-connrefused -O /home/administrator/kiosk_dateien/rdp.sh 'https://raw.githubusercontent.com/NK-Eyefidelity/RaspiRDP/refs/heads/main/rdp.sh'" ]
+  - [ sh, -c, "wget --tries=10 --waitretry=3 --retry-connrefused -O /home/administrator/kiosk_dateien/icon.png 'https://github.com/NK-Eyefidelity/RaspiRDP/blob/main/eye.png?raw=true'" ]
+
   
   # Skript ausführbar machen
   - chmod +x /home/administrator/kiosk_dateien/rdp.sh
