@@ -36,8 +36,8 @@ runcmd:
   - mkdir -p /home/administrator/.config/autostart
   
   # Deine Dateien herunterladen und ausführbar machen
-  - wget -O /home/administrator/kiosk_dateien/rdp.sh "https://github.com/NK-Eyefidelity/RaspiRDP/blob/0fcc80bd5032324ca8af66ca0c7c2638352e6a6d/rdp.sh"
-  - wget -O /home/administrator/kiosk_dateien/icon.png "https://github.com/NK-Eyefidelity/RaspiRDP/blob/0fcc80bd5032324ca8af66ca0c7c2638352e6a6d/eye.png"
+  - wget -O /home/administrator/kiosk_dateien/rdp.sh "https://raw.githubusercontent.com/NK-Eyefidelity/RaspiRDP/0fcc80bd5032324ca8af66ca0c7c2638352e6a6d/rdp.sh"
+  - wget -O /home/administrator/kiosk_dateien/icon.png "https://github.com/NK-Eyefidelity/RaspiRDP/blob/main/eye.png?raw=true"
   - chmod +x /home/administrator/kiosk_dateien/rdp.sh
   
   # Autostart-Eintrag für LXDE/Openbox erstellen
