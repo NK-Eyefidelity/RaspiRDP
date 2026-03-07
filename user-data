@@ -51,7 +51,7 @@ runcmd:
   - [ sh, -c, "wget --tries=10 --waitretry=3 --retry-connrefused -O /home/administrator/kiosk_dateien/rdp.sh 'https://raw.githubusercontent.com/NK-Eyefidelity/RaspiRDP/refs/heads/main/rdp.sh'" ]
   - [ sh, -c, "wget --tries=10 --waitretry=3 --retry-connrefused -O /home/administrator/kiosk_dateien/icon.png 'https://raw.githubusercontent.com/NK-Eyefidelity/RaspiRDP/main/eye.png'" ]
   
-  # Kiosk-Autostart anlegen (mit Verzeichniswechsel für das Icon!)
+    # Kiosk-Autostart anlegen
   - |
     cat <<'EOF' > /home/administrator/.config/openbox/autostart
     #!/bin/bash
@@ -59,9 +59,12 @@ runcmd:
     xset s noblank
     xset -dpms
     
-    # WICHTIG: In den Ordner wechseln, damit ./icon.png gefunden wird
+    # Kurz warten, bis der X11 Server komplett bereit ist
+    sleep 3
+    
+    # In den Ordner wechseln und Skript mit Display-Variable starten
     cd /home/administrator/kiosk_dateien
-    ./rdp.sh &
+    DISPLAY=:0 ./rdp.sh &
     EOF
     
   # Zugriffsrechte vergeben
