@@ -18,64 +18,64 @@ rpi:
     serial: true
 
 runcmd:
-  # 1. Aktiv auf das LAN-Internet warten
+  # 1. Netzwerk abwarten
   - [ bash, -c, "for ((i=1; i<=45; i++)); do ping -c1 raw.githubusercontent.com >/dev/null 2>&1 && break; sleep 2; done" ]
-
   - [ rfkill, unblock, wifi ]
   - [ sh, -c, "for f in /var/lib/systemd/rfkill/*:wlan; do echo 0 > \"$f\"; done" ]
 
-  # 2. System aktualisieren und Software installieren (JETZT MIT LXDE)
+  # 2. System updaten und Pakete installieren
   - apt-get update
   - DEBIAN_FRONTEND=noninteractive apt-get install -y xserver-xorg x11-xserver-utils openbox lxde lightdm freerdp3-x11 yad wget ca-certificates
 
-  # Erhöhte Wartezeit
-  - [ bash, -c, "for ((i=1; i<=45; i++)); do ping -c1 raw.githubusercontent.com >/dev/null 2>&1 && break; sleep 2; done" ]
-  
-  # Grafikmodus von Wayland auf X11/Openbox umstellen
+  # 3. Grafik auf X11 und Autologin einstellen
   - raspi-config nonint do_wayland W1
-
-  # Automatischen GUI-Login (Desktop Autologin) aktivieren
   - raspi-config nonint do_boot_behaviour B4
+  
+  # DER FIX: LightDM zwingen, unsere .xsession zu nutzen anstatt den fehlenden Pi-Desktop
   - sed -i 's/^#\?autologin-user=.*/autologin-user=administrator/' /etc/lightdm/lightdm.conf
+  - sed -i 's/^#\?autologin-session=.*/autologin-session=lightdm-xsession/' /etc/lightdm/lightdm.conf
+  - sed -i 's/^#\?user-session=.*/user-session=lightdm-xsession/' /etc/lightdm/lightdm.conf
 
-  # LightDM zwingen, in Openbox zu starten (als Kiosk-Unterbau)
-  - sed -i 's/^#\?user-session=.*/user-session=default/' /etc/lightdm/lightdm.conf
-  - sed -i 's/^autologin-session=.*/autologin-session=openbox/' /etc/lightdm/lightdm.conf
-  - update-alternatives --set x-session-manager /usr/bin/openbox-session || true
-  
-  # Verzeichnisse für den Benutzer erstellen
+  # 4. Verzeichnisse anlegen und Dateien laden
   - mkdir -p /home/administrator/kiosk_dateien
-  - mkdir -p /home/administrator/.config/autostart
-  
-  # Skripte und Icons herunterladen
   - [ sh, -c, "wget --tries=10 --waitretry=3 --retry-connrefused -O /home/administrator/kiosk_dateien/rdp.sh 'https://raw.githubusercontent.com/NK-Eyefidelity/RaspiRDP/refs/heads/main/rdp.sh'" ]
   - [ sh, -c, "wget --tries=10 --waitretry=3 --retry-connrefused -O /home/administrator/kiosk_dateien/icon.png 'https://raw.githubusercontent.com/NK-Eyefidelity/RaspiRDP/main/eye.png'" ]
-  
-  # LXPolkit-Konflikt auflösen (verhindert die PolicyKit1 Fehlermeldung)
-  - rm -f /etc/xdg/autostart/lxpolkit.desktop
-  
-  # Kiosk-Autostart anlegen (mit Error-Logging!)
+
+  # Schutz vor Windows-Zeilenumbrüchen im RDP-Skript
+  - sed -i 's/\r$//' /home/administrator/kiosk_dateien/rdp.sh
+
+  # DEN RECHTSKLICK AUF DEM DESKTOP DEAKTIVIEREN
+  - mkdir -p /home/administrator/.config/openbox
+  - cp /etc/xdg/openbox/rc.xml /home/administrator/.config/openbox/rc.xml
+  - sed -i '/<context name="Root">/,/<\/context>/ s/<action name="ShowMenu"><menu>root-menu<\/menu><\/action>//g' /home/administrator/.config/openbox/rc.xml
+
+  # 5. DIE NEUE MAGIE: Die .xsession Datei anlegen
   - |
-    cat <<'EOF' > /home/administrator/.config/openbox/autostart
+    cat <<'EOF' > /home/administrator/.xsession
     #!/bin/bash
     xset s off
     xset s noblank
     xset -dpms
     
-    # Kurz warten, bis der X11 Server komplett bereit ist
-    sleep 3
+    # Openbox im Hintergrund starten, damit Fenster Rahmen und Fokus haben
+    openbox &
+    OB_PID=$!
     
-    # In den Ordner wechseln
+    # In den Ordner wechseln und Kiosk-Skript starten (blockiert den Rest)
     cd /home/administrator/kiosk_dateien
+    ./rdp.sh
     
-    # RDP Skript starten und ALLE Fehler in eine Logdatei schreiben
-    ./rdp.sh > /home/administrator/kiosk_dateien/rdp_debug.log 2>&1 &
+    # Wenn rdp.sh erfolgreich (Admin Login) beendet wird (exit 0):
+    if [ $? -eq 0 ]; then
+        kill $OB_PID         # Kiosk-Fenstermanager beenden
+        exec startlxde       # Vollen LXDE-Desktop laden!
+    fi
     EOF
-    
-  # Zugriffsrechte vergeben
+
+  # 6. Rechte vergeben
   - chmod +x /home/administrator/kiosk_dateien/rdp.sh
-  - chmod +x /home/administrator/.config/openbox/autostart
-  - chown -R administrator:administrator /home/administrator/kiosk_dateien /home/administrator/.config
+  - chmod +x /home/administrator/.xsession
+  - chown -R administrator:administrator /home/administrator/
 
 # Reboot wenn Fertig
 power_state:
