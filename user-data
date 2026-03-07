@@ -51,7 +51,10 @@ runcmd:
   - [ sh, -c, "wget --tries=10 --waitretry=3 --retry-connrefused -O /home/administrator/kiosk_dateien/rdp.sh 'https://raw.githubusercontent.com/NK-Eyefidelity/RaspiRDP/refs/heads/main/rdp.sh'" ]
   - [ sh, -c, "wget --tries=10 --waitretry=3 --retry-connrefused -O /home/administrator/kiosk_dateien/icon.png 'https://raw.githubusercontent.com/NK-Eyefidelity/RaspiRDP/main/eye.png'" ]
   
-    # Kiosk-Autostart anlegen
+  # LXPolkit-Konflikt auflösen (verhindert die PolicyKit1 Fehlermeldung)
+  - rm -f /etc/xdg/autostart/lxpolkit.desktop
+  
+  # Kiosk-Autostart anlegen (mit Error-Logging!)
   - |
     cat <<'EOF' > /home/administrator/.config/openbox/autostart
     #!/bin/bash
@@ -62,9 +65,11 @@ runcmd:
     # Kurz warten, bis der X11 Server komplett bereit ist
     sleep 3
     
-    # In den Ordner wechseln und Skript mit Display-Variable starten
+    # In den Ordner wechseln
     cd /home/administrator/kiosk_dateien
-    DISPLAY=:0 ./rdp.sh &
+    
+    # RDP Skript starten und ALLE Fehler in eine Logdatei schreiben
+    ./rdp.sh > /home/administrator/kiosk_dateien/rdp_debug.log 2>&1 &
     EOF
     
   # Zugriffsrechte vergeben
