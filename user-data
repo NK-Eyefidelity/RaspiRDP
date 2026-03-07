@@ -49,7 +49,7 @@ runcmd:
   
   # Skripte und Icons herunterladen
   - [ sh, -c, "wget --tries=10 --waitretry=3 --retry-connrefused -O /home/administrator/kiosk_dateien/rdp.sh 'https://raw.githubusercontent.com/NK-Eyefidelity/RaspiRDP/refs/heads/main/rdp.sh'" ]
-  - [ sh, -c, "wget --tries=10 --waitretry=3 --retry-connrefused -O /home/administrator/kiosk_dateien/icon.png 'https://github.com/NK-Eyefidelity/RaspiRDP/blob/main/eye.png?raw=true'" ]
+  - [ sh, -c, "wget --tries=10 --waitretry=3 --retry-connrefused -O /home/administrator/kiosk_dateien/icon.png 'https://raw.githubusercontent.com/NK-Eyefidelity/RaspiRDP/main/eye.png'" ]
   
   # Kiosk-Autostart anlegen (mit Verzeichniswechsel für das Icon!)
   - |
