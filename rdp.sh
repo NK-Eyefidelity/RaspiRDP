@@ -93,7 +93,7 @@ admin_unlock() {
         # pcmanfm --desktop &
         
         # Hinweis: Falls du das ältere Bullseye nutzt, ersetze die zwei Zeilen hierdrüber durch:
-        lxpanel --profile LXDE-pi &
+        lxpanel &
         pcmanfm --desktop --profile LXDE-pi &
         
         exit 0
