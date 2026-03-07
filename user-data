@@ -25,13 +25,11 @@ runcmd:
 
   # 2. System updaten und Pakete installieren
   - apt-get update
-  - DEBIAN_FRONTEND=noninteractive apt-get install -y xserver-xorg x11-xserver-utils openbox lxde lightdm freerdp3-x11 yad wget ca-certificates
+  - DEBIAN_FRONTEND=noninteractive apt-get install -y xserver-xorg x11-xserver-utils openbox lxde lightdm freerdp3-x11 yad wget ca-certificates dos2unix
 
   # 3. Grafik auf X11 und Autologin einstellen
   - raspi-config nonint do_wayland W1
   - raspi-config nonint do_boot_behaviour B4
-  
-  # DER FIX: LightDM zwingen, unsere .xsession zu nutzen anstatt den fehlenden Pi-Desktop
   - sed -i 's/^#\?autologin-user=.*/autologin-user=administrator/' /etc/lightdm/lightdm.conf
   - sed -i 's/^#\?autologin-session=.*/autologin-session=lightdm-xsession/' /etc/lightdm/lightdm.conf
   - sed -i 's/^#\?user-session=.*/user-session=lightdm-xsession/' /etc/lightdm/lightdm.conf
@@ -40,16 +38,14 @@ runcmd:
   - mkdir -p /home/administrator/kiosk_dateien
   - [ sh, -c, "wget --tries=10 --waitretry=3 --retry-connrefused -O /home/administrator/kiosk_dateien/rdp.sh 'https://raw.githubusercontent.com/NK-Eyefidelity/RaspiRDP/refs/heads/main/rdp.sh'" ]
   - [ sh, -c, "wget --tries=10 --waitretry=3 --retry-connrefused -O /home/administrator/kiosk_dateien/icon.png 'https://raw.githubusercontent.com/NK-Eyefidelity/RaspiRDP/main/eye.png'" ]
-
-  # Schutz vor Windows-Zeilenumbrüchen im RDP-Skript
   - sed -i 's/\r$//' /home/administrator/kiosk_dateien/rdp.sh
 
-  # DEN RECHTSKLICK AUF DEM DESKTOP DEAKTIVIEREN
+  # 5. DEN RECHTSKLICK AUF DEM DESKTOP DEAKTIVIEREN
   - mkdir -p /home/administrator/.config/openbox
   - cp /etc/xdg/openbox/rc.xml /home/administrator/.config/openbox/rc.xml
   - sed -i '/<context name="Root">/,/<\/context>/ s/<action name="ShowMenu"><menu>root-menu<\/menu><\/action>//g' /home/administrator/.config/openbox/rc.xml
 
-  # 5. DIE NEUE MAGIE: Die .xsession Datei anlegen
+  # 6. Die .xsession Datei anlegen
   - |
     cat <<'EOF' > /home/administrator/.xsession
     #!/bin/bash
@@ -57,22 +53,22 @@ runcmd:
     xset s noblank
     xset -dpms
     
-    # Openbox im Hintergrund starten, damit Fenster Rahmen und Fokus haben
+    # Openbox im Hintergrund starten
     openbox &
     OB_PID=$!
     
-    # In den Ordner wechseln und Kiosk-Skript starten (blockiert den Rest)
+    # In den Ordner wechseln und Kiosk-Skript starten
     cd /home/administrator/kiosk_dateien
     ./rdp.sh
     
     # Wenn rdp.sh erfolgreich (Admin Login) beendet wird (exit 0):
     if [ $? -eq 0 ]; then
-        kill $OB_PID         # Kiosk-Fenstermanager beenden
-        exec startlxde       # Vollen LXDE-Desktop laden!
+        kill $OB_PID
+        exec startlxde
     fi
     EOF
 
-  # 6. Rechte vergeben
+  # 7. Rechte vergeben
   - chmod +x /home/administrator/kiosk_dateien/rdp.sh
   - chmod +x /home/administrator/.xsession
   - chown -R administrator:administrator /home/administrator/
