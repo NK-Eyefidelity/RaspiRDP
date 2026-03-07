@@ -1,7 +1,7 @@
 #!/bin/bash
 # === Konfiguration ===
-RDP_IP="192.168.0.7"
-RDP_DOMAIN="Reiners-immobilien.local"
+RDP_IP="192.168.20.41"
+RDP_DOMAIN="DESKTOP-54AOFR2"
 WINDOW_ICON="./icon.png"
 ADMIN_PASS="geheim123" # <--- HIER DEIN ADMIN-PASSWORT EINTRAGEN
 
