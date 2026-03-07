@@ -88,14 +88,6 @@ admin_unlock() {
             openbox --reconfigure
         fi
 		
-		# Desktop-Elemente wiederherstellen (Für Raspberry Pi OS Bookworm)
-        # wf-panel-pi &
-        # pcmanfm --desktop &
-        
-        # Hinweis: Falls du das ältere Bullseye nutzt, ersetze die zwei Zeilen hierdrüber durch:
-        lxpanel &
-        pcmanfm --desktop --profile LXDE-pi &
-        
         exit 0
     else
         # Bei falschem Passwort oder Abbruch
