@@ -33,13 +33,14 @@ runcmd:
   
   # Grafikmodus von Wayland auf X11/Openbox umstellen
   - raspi-config nonint do_wayland W1
-  
+
   # Automatischen GUI-Login (Desktop Autologin) aktivieren
   - raspi-config nonint do_boot_behaviour B4
   - sed -i 's/^#\?autologin-user=.*/autologin-user=administrator/' /etc/lightdm/lightdm.conf
 
   # LightDM zwingen, die .xsession Datei zu nutzen anstatt den Standard-Desktop zu laden
   - sed -i 's/^#\?user-session=.*/user-session=default/' /etc/lightdm/lightdm.conf
+  - sed -i 's/^autologin-session=.*/autologin-session=openbox/' /etc/lightdm/lightdm.conf
   - update-alternatives --set x-session-manager /usr/bin/openbox-session || true
   
   # Verzeichnisse für den Benutzer erstellen
@@ -54,20 +55,21 @@ runcmd:
   # Skript ausführbar machen
   - chmod +x /home/administrator/kiosk_dateien/rdp.sh
   
-  # Kiosk-Sitzung (.xsession) erstellen, die den Desktop überspringt
+  # Kiosk-Autostart direkt für Openbox anlegen (ersetzt die alte .xsession Datei)
   - |
-    cat <<'EOF' > /home/administrator/.xsession
+    cat <<'EOF' > /home/administrator/.config/openbox/autostart
     #!/bin/bash
     xset s off
     xset s noblank
     xset -dpms
-    openbox &
-    exec /home/administrator/kiosk_dateien/rdp.sh
+    # RDP Skript starten
+    /home/administrator/kiosk_dateien/rdp.sh &
     EOF
     
   # Zugriffsrechte an deinen Benutzer übergeben
-  - chmod +x /home/administrator/.xsession
-  - chown -R administrator:administrator /home/administrator/kiosk_dateien /home/administrator/.xsession
+  - chmod +x /home/administrator/kiosk_dateien/rdp.sh
+  - chmod +x /home/administrator/.config/openbox/autostart
+  - chown -R administrator:administrator /home/administrator/kiosk_dateien /home/administrator/.config
 
 # Reboot wenn Fertig
 power_state:
