@@ -4,12 +4,14 @@ timezone: Europe/Berlin
 keyboard:
   model: pc105
   layout: "de"
+
 users:
 - name: administrator
   groups: users,adm,dialout,audio,netdev,video,plugdev,cdrom,games,input,gpio,spi,i2c,render,sudo
   shell: /bin/bash
   lock_passwd: false
   passwd: "$y$jB5$oZaGVZZBpkaIDJrAlUYAk.$mEKVw.pgCLa39z/0N7y.7FIjHuf6KYpuHiCQw1hGlr1"
+
 enable_ssh: true
 ssh_pwauth: true
 
@@ -18,62 +20,93 @@ rpi:
     serial: true
 
 runcmd:
-  # 1. Netzwerk abwarten
+  # Netzwerkverbindung abwarten und WLAN entsperren
   - [ bash, -c, "for ((i=1; i<=45; i++)); do ping -c1 raw.githubusercontent.com >/dev/null 2>&1 && break; sleep 2; done" ]
   - [ rfkill, unblock, wifi ]
   - [ sh, -c, "for f in /var/lib/systemd/rfkill/*:wlan; do echo 0 > \"$f\"; done" ]
 
-  # 2. System updaten und Pakete installieren
+  # Benötigte Pakete installieren
   - apt-get update
-  - DEBIAN_FRONTEND=noninteractive apt-get install -y xserver-xorg x11-xserver-utils openbox lxde lightdm freerdp3-x11 yad wget ca-certificates dos2unix
+  - DEBIAN_FRONTEND=noninteractive apt-get install -y xserver-xorg x11-xserver-utils openbox lightdm freerdp3-x11 yad wget ca-certificates dos2unix dbus-x11 xfce4 task-xfce-desktop
 
-  # 3. Grafik auf X11 und Autologin einstellen
+  # X11 und Autologin konfigurieren
   - raspi-config nonint do_wayland W1
   - raspi-config nonint do_boot_behaviour B4
   - sed -i 's/^#\?autologin-user=.*/autologin-user=administrator/' /etc/lightdm/lightdm.conf
-  - sed -i 's/^#\?autologin-session=.*/autologin-session=lightdm-xsession/' /etc/lightdm/lightdm.conf
-  - sed -i 's/^#\?user-session=.*/user-session=lightdm-xsession/' /etc/lightdm/lightdm.conf
+  - sed -i 's/^#\?autologin-session=.*/autologin-session=custom-kiosk/' /etc/lightdm/lightdm.conf
+  - sed -i 's/^#\?user-session=.*/user-session=custom-kiosk/' /etc/lightdm/lightdm.conf
 
-  # 4. Verzeichnisse anlegen und Dateien laden
+  # Kiosk-Dateien anlegen und laden
   - mkdir -p /home/administrator/kiosk_dateien
   - [ sh, -c, "wget --tries=10 --waitretry=3 --retry-connrefused -O /home/administrator/kiosk_dateien/rdp.sh 'https://raw.githubusercontent.com/NK-Eyefidelity/RaspiRDP/refs/heads/main/rdp.sh'" ]
   - [ sh, -c, "wget --tries=10 --waitretry=3 --retry-connrefused -O /home/administrator/kiosk_dateien/icon.png 'https://raw.githubusercontent.com/NK-Eyefidelity/RaspiRDP/main/eye.png'" ]
-  - sed -i 's/\r$//' /home/administrator/kiosk_dateien/rdp.sh
 
-  # 5. DEN RECHTSKLICK AUF DEM DESKTOP DEAKTIVIEREN
+  # Openbox-Konfiguration für den Kiosk vorbereiten
   - mkdir -p /home/administrator/.config/openbox
   - cp /etc/xdg/openbox/rc.xml /home/administrator/.config/openbox/rc.xml
   - sed -i '/<context name="Root">/,/<\/context>/ s/<action name="ShowMenu"><menu>root-menu<\/menu><\/action>//g' /home/administrator/.config/openbox/rc.xml
 
-  # 6. Die .xsession Datei anlegen
+  # Wrapper: entscheidet zwischen Kiosk und XFCE
   - |
-    cat <<'EOF' > /home/administrator/.xsession
+    cat <<'EOF' > /usr/local/bin/kiosk-or-xfce.sh
     #!/bin/bash
-    xset s off
-    xset s noblank
-    xset -dpms
-    
-    # Openbox im Hintergrund starten
-    openbox &
-    OB_PID=$!
-    
-    # In den Ordner wechseln und Kiosk-Skript starten
-    cd /home/administrator/kiosk_dateien
-    ./rdp.sh
-    
-    # Wenn rdp.sh erfolgreich (Admin Login) beendet wird (exit 0):
-    if [ $? -eq 0 ]; then
-        kill $OB_PID
-        exec startlxde
+    if [ -f /home/administrator/.start_xfce_once ]; then
+        rm -f /home/administrator/.start_xfce_once
+        exec startxfce4
+    else
+        exec /home/administrator/.kiosk-session
     fi
     EOF
 
-  # 7. Rechte vergeben
-  - chmod +x /home/administrator/kiosk_dateien/rdp.sh
-  - chmod +x /home/administrator/.xsession
-  - chown -R administrator:administrator /home/administrator/
+  # Eigene LightDM-Session registrieren
+  - |
+    cat <<'EOF' > /usr/share/xsessions/custom-kiosk.desktop
+    [Desktop Entry]
+    Name=Custom Kiosk
+    Comment=Openbox kiosk with XFCE fallback after unlock
+    Exec=/usr/local/bin/kiosk-or-xfce.sh
+    Type=Application
+    DesktopNames=Custom-Kiosk
+    EOF
 
-# Reboot wenn Fertig
+  # Kiosk-Session anlegen
+  - |
+    cat <<'EOF' > /home/administrator/.kiosk-session
+    #!/bin/bash
+    eval $(dbus-launch --sh-syntax)
+
+    xset s off
+    xset s noblank
+    xset -dpms
+
+    openbox &
+    OB_PID=$!
+
+    sleep 2
+
+    cd /home/administrator/kiosk_dateien
+    ./rdp.sh > /home/administrator/rdp_debug.log 2>&1
+    RDP_EXIT=$?
+
+    if [ "$RDP_EXIT" -eq 0 ]; then
+        touch /home/administrator/.start_xfce_once
+    fi
+
+    kill "$OB_PID" 2>/dev/null || true
+    wait "$OB_PID" 2>/dev/null || true
+    exit 0
+    EOF
+
+  # Zeilenumbrüche, Rechte und Besitzer korrigieren
+  - dos2unix /home/administrator/kiosk_dateien/rdp.sh
+  - dos2unix /usr/local/bin/kiosk-or-xfce.sh
+  - dos2unix /home/administrator/.kiosk-session
+  - chmod 755 /home/administrator/kiosk_dateien/rdp.sh
+  - chmod 755 /usr/local/bin/kiosk-or-xfce.sh
+  - chmod 755 /home/administrator/.kiosk-session
+  - chown -R administrator:administrator /home/administrator/
+  - chown administrator:administrator /home/administrator/.kiosk-session
+
 power_state:
   mode: reboot
   message: "Systemkonfiguration abgeschlossen. Neustart wird eingeleitet."
