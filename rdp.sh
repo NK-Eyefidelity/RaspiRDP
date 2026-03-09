@@ -1,9 +1,9 @@
 #!/bin/bash
 # === Konfiguration ===
-RDP_IP="192.168.20.41"
-RDP_DOMAIN="DESKTOP-54AOFR2"
+RDP_IP="127.0.0.1"
+RDP_DOMAIN="DESKTOP.local"
 WINDOW_ICON="./icon.png"
-ADMIN_PASS="geheim123" # <--- HIER DEIN ADMIN-PASSWORT EINTRAGEN
+ADMIN_PASS="xxxxx" # <--- HIER DEIN ADMIN-PASSWORT EINTRAGEN
 
 # Pfade für die LXDE/Openbox-Konfiguration
 OPENBOX_DIR="$HOME/.config/openbox"
