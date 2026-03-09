@@ -41,6 +41,21 @@ runcmd:
   - [ sh, -c, "wget --tries=10 --waitretry=3 --retry-connrefused -O /home/administrator/kiosk_dateien/rdp.sh 'https://raw.githubusercontent.com/NK-Eyefidelity/RaspiRDP/refs/heads/main/rdp.sh'" ]
   - [ sh, -c, "wget --tries=10 --waitretry=3 --retry-connrefused -O /home/administrator/kiosk_dateien/icon.png 'https://raw.githubusercontent.com/NK-Eyefidelity/RaspiRDP/main/eye.png'" ]
 
+  # Variablen in der heruntergeladenen rdp.sh überschreiben
+  - |
+    # ==========================================
+    # HIER DIE GEWÜNSCHTEN RDP-DATEN EINTRAGEN:
+    # ==========================================
+    NEW_RDP_IP="127.0.0.1"
+    NEW_RDP_DOMAIN="xxxxx.local"
+    NEW_ADMIN_PASS="xxxxx"
+    # ==========================================
+    
+    TARGET_FILE="/home/administrator/kiosk_dateien/rdp.sh"
+    sed -i "s/^RDP_IP=.*/RDP_IP=\"$NEW_RDP_IP\"/" "$TARGET_FILE"
+    sed -i "s/^RDP_DOMAIN=.*/RDP_DOMAIN=\"$NEW_RDP_DOMAIN\"/" "$TARGET_FILE"
+    sed -i "s/^ADMIN_PASS=.*/ADMIN_PASS=\"$NEW_ADMIN_PASS\"/" "$TARGET_FILE"
+
   # Openbox-Konfiguration für den Kiosk vorbereiten
   - mkdir -p /home/administrator/.config/openbox
   - cp /etc/xdg/openbox/rc.xml /home/administrator/.config/openbox/rc.xml
