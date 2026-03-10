@@ -1,16 +1,34 @@
 #cloud-config
 manage_resolv_conf: false
 timezone: Europe/Berlin
+
 keyboard:
   model: pc105
   layout: "de"
 
+package_update: true
+package_upgrade: false
+
+packages:
+  - xserver-xorg
+  - x11-xserver-utils
+  - openbox
+  - lightdm
+  - freerdp3-x11
+  - yad
+  - wget
+  - ca-certificates
+  - dos2unix
+  - dbus-x11
+  - xfce4
+  - task-xfce-desktop
+
 users:
-- name: administrator
-  groups: users,adm,dialout,audio,netdev,video,plugdev,cdrom,games,input,gpio,spi,i2c,render,sudo
-  shell: /bin/bash
-  lock_passwd: false
-  passwd: "$y$jB5$oZaGVZZBpkaIDJrAlUYAk.$mEKVw.pgCLa39z/0N7y.7FIjHuf6KYpuHiCQw1hGlr1"
+  - name: administrator
+    groups: users,adm,dialout,audio,netdev,video,plugdev,cdrom,games,input,gpio,spi,i2c,render,sudo
+    shell: /bin/bash
+    lock_passwd: false
+    passwd: "$y$jB5$oZaGVZZBpkaIDJrAlUYAk.$mEKVw.pgCLa39z/0N7y.7FIjHuf6KYpuHiCQw1hGlr1"
 
 enable_ssh: true
 ssh_pwauth: true
@@ -20,28 +38,46 @@ rpi:
     serial: true
 
 runcmd:
-  # Netzwerkverbindung abwarten und WLAN entsperren
-  - [ bash, -c, "for ((i=1; i<=45; i++)); do ping -c1 raw.githubusercontent.com >/dev/null 2>&1 && break; sleep 2; done" ]
+  # WLAN entsperren BEVOR auf Netzwerk gewartet wird
   - [ rfkill, unblock, wifi ]
-  - [ sh, -c, "for f in /var/lib/systemd/rfkill/*:wlan; do echo 0 > \"$f\"; done" ]
+  - [ sh, -c, "for f in /var/lib/systemd/rfkill/*:wlan; do [ -e \"$f\" ] && echo 0 > \"$f\"; done" ]
 
-  # Benötigte Pakete installieren
-  - apt-get update
-  - DEBIAN_FRONTEND=noninteractive apt-get install -y xserver-xorg x11-xserver-utils openbox lightdm freerdp3-x11 yad wget ca-certificates dos2unix dbus-x11 xfce4 task-xfce-desktop
+  # Netzwerkverbindung abwarten
+  - [ bash, -c, "for ((i=1; i<=45; i++)); do ping -c1 raw.githubusercontent.com >/dev/null 2>&1 && break; sleep 2; done" ]
 
-  # X11 und Autologin konfigurieren
+  # X11 und Boot-Verhalten konfigurieren
   - raspi-config nonint do_wayland W1
   - raspi-config nonint do_boot_behaviour B4
   - sed -i 's/^#\?autologin-user=.*/autologin-user=administrator/' /etc/lightdm/lightdm.conf
   - sed -i 's/^#\?autologin-session=.*/autologin-session=custom-kiosk/' /etc/lightdm/lightdm.conf
   - sed -i 's/^#\?user-session=.*/user-session=custom-kiosk/' /etc/lightdm/lightdm.conf
 
-  # Kiosk-Dateien anlegen und laden
-  - mkdir -p /home/administrator/kiosk_dateien
-  - [ sh, -c, "wget --tries=10 --waitretry=3 --retry-connrefused -O /home/administrator/kiosk_dateien/rdp.sh 'https://raw.githubusercontent.com/NK-Eyefidelity/RaspiRDP/refs/heads/main/rdp.sh'" ]
-  - [ sh, -c, "wget --tries=10 --waitretry=3 --retry-connrefused -O /home/administrator/kiosk_dateien/icon.png 'https://raw.githubusercontent.com/NK-Eyefidelity/RaspiRDP/main/eye.png'" ]
+  # Icon-URL festlegen und Dateien laden
+  - |
+    # ==========================================
+    # HIER DIE URL ZUM ICON EINTRAGEN:
+    # ==========================================
+    NEW_ICON_URL=""
+    # ==========================================
 
-  # Variablen in der heruntergeladenen rdp.sh überschreiben
+    if [ -n "$NEW_ICON_URL" ]; then
+        ICON_URL="$NEW_ICON_URL"
+    else
+        ICON_URL="https://raw.githubusercontent.com/NK-Eyefidelity/RaspiRDP/main/eye.png"
+    fi
+    # ==========================================
+
+    mkdir -p /home/administrator/kiosk_dateien
+
+    wget --tries=10 --waitretry=3 --retry-connrefused \
+      -O /home/administrator/kiosk_dateien/rdp.sh \
+      "https://raw.githubusercontent.com/NK-Eyefidelity/RaspiRDP/refs/heads/main/rdp.sh"
+
+    wget --tries=10 --waitretry=3 --retry-connrefused \
+      -O /home/administrator/kiosk_dateien/icon.png \
+      "$ICON_URL"
+
+  # Variablen in der heruntergeladenen rdp.sh ueberschreiben
   - |
     # ==========================================
     # HIER DIE GEWÜNSCHTEN RDP-DATEN EINTRAGEN:
@@ -50,13 +86,13 @@ runcmd:
     NEW_RDP_DOMAIN="xxxxx.local"
     NEW_ADMIN_PASS="xxxxx"
     # ==========================================
-    
-    TARGET_FILE="/home/administrator/kiosk_dateien/rdp.sh"
-    sed -i "s/^RDP_IP=.*/RDP_IP=\"$NEW_RDP_IP\"/" "$TARGET_FILE"
-    sed -i "s/^RDP_DOMAIN=.*/RDP_DOMAIN=\"$NEW_RDP_DOMAIN\"/" "$TARGET_FILE"
-    sed -i "s/^ADMIN_PASS=.*/ADMIN_PASS=\"$NEW_ADMIN_PASS\"/" "$TARGET_FILE"
 
-  # Openbox-Konfiguration für den Kiosk vorbereiten
+    TARGET_FILE="/home/administrator/kiosk_dateien/rdp.sh"
+    sed -i "s|^RDP_IP=.*|RDP_IP=\"$NEW_RDP_IP\"|" "$TARGET_FILE"
+    sed -i "s|^RDP_DOMAIN=.*|RDP_DOMAIN=\"$NEW_RDP_DOMAIN\"|" "$TARGET_FILE"
+    sed -i "s|^ADMIN_PASS=.*|ADMIN_PASS=\"$NEW_ADMIN_PASS\"|" "$TARGET_FILE"
+
+  # Openbox-Konfiguration fuer den Kiosk vorbereiten
   - mkdir -p /home/administrator/.config/openbox
   - cp /etc/xdg/openbox/rc.xml /home/administrator/.config/openbox/rc.xml
   - sed -i '/<context name="Root">/,/<\/context>/ s/<action name="ShowMenu"><menu>root-menu<\/menu><\/action>//g' /home/administrator/.config/openbox/rc.xml
@@ -88,7 +124,7 @@ runcmd:
   - |
     cat <<'EOF' > /home/administrator/.kiosk-session
     #!/bin/bash
-    eval $(dbus-launch --sh-syntax)
+    eval "$(dbus-launch --sh-syntax)"
 
     xset s off
     xset s noblank
@@ -112,13 +148,14 @@ runcmd:
     exit 0
     EOF
 
-  # Zeilenumbrüche, Rechte und Besitzer korrigieren
+  # Zeilenumbrueche, Rechte und Besitzer korrigieren
   - dos2unix /home/administrator/kiosk_dateien/rdp.sh
   - dos2unix /usr/local/bin/kiosk-or-xfce.sh
   - dos2unix /home/administrator/.kiosk-session
   - chmod 755 /home/administrator/kiosk_dateien/rdp.sh
   - chmod 755 /usr/local/bin/kiosk-or-xfce.sh
   - chmod 755 /home/administrator/.kiosk-session
+  - chmod 644 /usr/share/xsessions/custom-kiosk.desktop
   - chown -R administrator:administrator /home/administrator/
   - chown administrator:administrator /home/administrator/.kiosk-session
 
@@ -126,4 +163,4 @@ power_state:
   mode: reboot
   message: "Systemkonfiguration abgeschlossen. Neustart wird eingeleitet."
   timeout: 10
-  condition: True
+  condition: true
