@@ -54,6 +54,9 @@ fi
 
 # === Funktion für den Admin-Login ===
 admin_unlock() {
+
+     local ICON="$1"
+
     ADMIN_INPUT=$(yad --entry \
         --title="Administration" \
         --width=350 \
@@ -61,7 +64,7 @@ admin_unlock() {
         --image="dialog-password" \
         --text="\n Bitte Administrator-Passwort eingeben:\n" \
         --hide-text \
-        --window-icon="$WINDOW_ICON" \
+        --window-icon="$ICON" \
         --buttons-layout=center \
         --button="Zurück:1" \
         --button="Kiosk beenden:0")
@@ -127,10 +130,22 @@ while true; do
                 continue
             fi
 
-            # Wenn Abbrechen gedrückt wurde oder Passwort leer ist -> Admin-Check
-            if [ $EXIT_CODE -ne 0 ] || [ -z "$PASSWORD" ]; then
-                admin_unlock
-                continue # Geht zurück zum Start der Schleife
+            # Wenn Abbrechen gedrückt wurde -> Admin-Check
+            if [ $EXIT_CODE -ne 0 ]; then
+                admin_unlock "$WINDOW_ICON"
+                continue
+            fi
+            
+            # Wenn Passwort leer ist -> Fehler
+            if [ -z "$PASSWORD" ]; then
+                yad --error --title="Fehler" \
+                --width=400 --borders=20 \
+                --image="dialog-error" \
+                --text="\nDas Passwort darf nicht leer sein!\n" \
+                --text-align=center \
+                --buttons-layout=center \
+                --button="OK:0"
+                continue
             fi
 
             USERNAME="$LAST_USER"
@@ -156,27 +171,39 @@ while true; do
 
             EXIT_CODE=$?
 
-            # Wenn Abbrechen gedrückt wurde oder Formular leer ist -> Admin-Check
-            if [ $EXIT_CODE -ne 0 ] || [ -z "$FORM_OUTPUT" ]; then
-                admin_unlock
-                continue # Geht zurück zum Start der Schleife
+            # Wenn Abbrechen gedrückt wurde -> Admin-Check
+            if [ $EXIT_CODE -ne 0 ]; then
+                admin_unlock "$WINDOW_ICON"
+                continue
             fi
 
             USERNAME=$(echo "$FORM_OUTPUT" | awk -F'::::' '{print $1}')
             PASSWORD=$(echo "$FORM_OUTPUT" | awk -F'::::' '{print $2}')
 
-            if [ -n "$USERNAME" ]; then
-                break
-            else
+            if [ -z "$USERNAME" ]; then
                 yad --error --title="Fehler" \
-                    --width=400 --borders=20 \
-                    --text="\nDer Benutzername darf nicht leer sein!\n" \
-                    --text-align=center \
-                    --buttons-layout=center \
-                    --button="OK:0"
+                --width=400 --borders=20 \
+                --text="\nDer Benutzername darf nicht leer sein!\n" \
+                --text-align=center \
+                --buttons-layout=center \
+                --button="OK:0"
+                continue
             fi
+        
+            # Wenn Passwort leer ist -> Fehler
+            if [ -z "$PASSWORD" ]; then
+                yad --error --title="Fehler" \
+                --width=400 --borders=20 \
+                --image="dialog-error" \
+                --text="\nDas Passwort darf nicht leer sein!\n" \
+                --text-align=center \
+                --buttons-layout=center \
+                --button="OK:0"
+                continue
+            fi
+            
+            break
         fi
-
     done
 
     # Neuen/Bestätigten Benutzernamen für das nächste Mal speichern
