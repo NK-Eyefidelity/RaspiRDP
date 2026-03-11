@@ -71,7 +71,7 @@ admin_unlock() {
 
     # Wenn OK gedrückt wurde ($? -eq 0) UND das Passwort stimmt
     if [ $? -eq 0 ] && [ "$ADMIN_INPUT" = "$ADMIN_PASS" ]; then
-        yad --info --title="Erfolg" --window-icon="$ICON" --text="\n Kiosk-Modus wird beendet...\n" --timeout=2 --no-buttons
+        yad --info --title="Erfolg" --text="\n Kiosk-Modus wird beendet...\n" --timeout=2 --no-buttons
         
         # Signale (Strg+C etc.) wieder aktivieren
         trap - SIGINT SIGQUIT SIGTSTP
@@ -90,11 +90,11 @@ admin_unlock() {
             # Änderungen live anwenden
             openbox --reconfigure
         fi
-		
+
         exit 0
     else
         # Bei falschem Passwort oder Abbruch
-        yad --error --title="Fehler" --text="\n Falsches Passwort oder abgebrochen!\n" --timeout=2 --no-buttons
+        yad --error --title="Fehler" --window-icon="$ICON" --text="\n Falsches Passwort oder abgebrochen!\n" --timeout=2 --no-buttons
         return 1
     fi
 }
@@ -143,6 +143,7 @@ while true; do
                 --image="dialog-error" \
                 --text="\nDas Passwort darf nicht leer sein!\n" \
                 --text-align=center \
+                --window-icon="$WINDOW_ICON" \
                 --buttons-layout=center \
                 --button="OK:0"
                 continue
@@ -185,6 +186,7 @@ while true; do
                 --width=400 --borders=20 \
                 --text="\nDer Benutzername darf nicht leer sein!\n" \
                 --text-align=center \
+                --window-icon="$WINDOW_ICON" \
                 --buttons-layout=center \
                 --button="OK:0"
                 continue
@@ -197,6 +199,7 @@ while true; do
                 --image="dialog-error" \
                 --text="\nDas Passwort darf nicht leer sein!\n" \
                 --text-align=center \
+                --window-icon="$WINDOW_ICON" \
                 --buttons-layout=center \
                 --button="OK:0"
                 continue
@@ -223,6 +226,7 @@ while true; do
             --image="dialog-error" \
             --text=" Verbindung fehlgeschlagen!\n\n Bitte prüfen Sie Ihr Passwort, Benutzername\n oder die Netzwerkverbindung." \
             --text-align=left \
+            --window-icon="$WINDOW_ICON" \
             --buttons-layout=center \
             --button="Erneut versuchen:0"
 
