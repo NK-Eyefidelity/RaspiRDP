@@ -71,7 +71,7 @@ admin_unlock() {
 
     # Wenn OK gedrückt wurde ($? -eq 0) UND das Passwort stimmt
     if [ $? -eq 0 ] && [ "$ADMIN_INPUT" = "$ADMIN_PASS" ]; then
-        yad --info --title="Erfolg" --text="\n Kiosk-Modus wird beendet...\n" --timeout=2 --no-buttons
+        yad --info --title="Erfolg" --window-icon="$ICON" --text="\n Kiosk-Modus wird beendet...\n" --timeout=2 --no-buttons
         
         # Signale (Strg+C etc.) wieder aktivieren
         trap - SIGINT SIGQUIT SIGTSTP
