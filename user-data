@@ -55,7 +55,7 @@ runcmd:
   # Icon-URL festlegen und Dateien laden
   - |
     # ==========================================
-    # HIER DIE URL ZUM ICON EINTRAGEN:
+    # HIER DIE URL ZUM ICON EINTRAGEN 150x150px:
     # ==========================================
     NEW_ICON_URL=""
     # ==========================================
