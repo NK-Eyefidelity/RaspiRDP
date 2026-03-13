@@ -67,11 +67,12 @@ admin_unlock() {
         --window-icon="$ICON" \
         --buttons-layout=center \
         --button="Zurück:1" \
-        --button="Kiosk beenden:0")
+        --button="Kiosk beenden:0" \
+        --undecorated)
 
     # Wenn OK gedrückt wurde ($? -eq 0) UND das Passwort stimmt
     if [ $? -eq 0 ] && [ "$ADMIN_INPUT" = "$ADMIN_PASS" ]; then
-        yad --info --title="Erfolg" --text="\n Kiosk-Modus wird beendet...\n" --timeout=2 --no-buttons
+        yad --info --title="Erfolg" --text="\n Kiosk-Modus wird beendet...\n" --timeout=2 --no-buttons --undecorated
         
         # Signale (Strg+C etc.) wieder aktivieren
         trap - SIGINT SIGQUIT SIGTSTP
@@ -94,7 +95,7 @@ admin_unlock() {
         exit 0
     else
         # Bei falschem Passwort oder Abbruch
-        yad --error --title="Fehler" --window-icon="$ICON" --text="\n Falsches Passwort oder abgebrochen!\n" --timeout=2 --no-buttons
+        yad --error --title="Fehler" --window-icon="$ICON" --text="\n Falsches Passwort oder abgebrochen!\n" --timeout=2 --no-buttons --undecorated
         return 1
     fi
 }
@@ -121,7 +122,8 @@ while true; do
                 --buttons-layout=center \
                 --button="Abbrechen:1" \
                 --button="Benutzer ändern:2" \
-                --button="Verbinden:0")
+                --button="Verbinden:0" \
+                --undecorated)
 
             EXIT_CODE=$?
 
@@ -145,7 +147,8 @@ while true; do
                 --text-align=center \
                 --window-icon="$WINDOW_ICON" \
                 --buttons-layout=center \
-                --button="OK:0"
+                --button="OK:0" \
+                --undecorated
                 continue
             fi
 
@@ -168,7 +171,8 @@ while true; do
                 --field=" Benutzername" "" \
                 --field=" Passwort:H" "" \
                 --button="Abbrechen:1" \
-                --button="Verbinden:0")
+                --button="Verbinden:0" \
+                --undecorated)
 
             EXIT_CODE=$?
 
@@ -188,7 +192,8 @@ while true; do
                 --text-align=center \
                 --window-icon="$WINDOW_ICON" \
                 --buttons-layout=center \
-                --button="OK:0"
+                --button="OK:0" \
+                --undecorated
                 continue
             fi
         
@@ -201,7 +206,8 @@ while true; do
                 --text-align=center \
                 --window-icon="$WINDOW_ICON" \
                 --buttons-layout=center \
-                --button="OK:0"
+                --button="OK:0" \
+                --undecorated
                 continue
             fi
             
@@ -228,7 +234,8 @@ while true; do
             --text-align=left \
             --window-icon="$WINDOW_ICON" \
             --buttons-layout=center \
-            --button="Erneut versuchen:0"
+            --button="Erneut versuchen:0" \
+            --undecorated
 
         LAST_USER="$USERNAME"
     fi
