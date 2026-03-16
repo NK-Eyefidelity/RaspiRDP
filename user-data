@@ -99,18 +99,12 @@ runcmd:
   - cp /etc/xdg/openbox/rc.xml /home/administrator/.config/openbox/rc.xml
   - sed -i '/<context name="Root">/,/<\/context>/ s/<action name="ShowMenu"><menu>root-menu<\/menu><\/action>//g' /home/administrator/.config/openbox/rc.xml
 
-  # Desktop-Mausbindungen permanent deaktivieren
+  # Openbox-Hintergrundbindungen komplett deaktivieren
   - |
-    python3 -c "
-    import re
-    path = '/home/administrator/.config/openbox/rc.xml'
-    with open(path, 'r') as f:
-        c = f.read()
-    c = re.sub(r'<number>\d+</number>', '<number>1</number>', c)
-    c = re.sub(r'(<context name=\"Desktop\">).*?(</context>)', r'\1\n</context>', c, flags=re.DOTALL)
-    with open(path, 'w') as f:
-    f.write(c)
-    "
+    perl -0pi -e 's|<number>\d+</number>|<number>1</number>|g;
+    s|<context name="Desktop">.*?</context>|<context name="Desktop">\n</context>|s;
+    s|<context name="Root">.*?</context>|<context name="Root">\n</context>|s;' \
+    /home/administrator/.config/openbox/rc.xml
 
   # Wrapper: entscheidet zwischen Kiosk und XFCE
   - |
