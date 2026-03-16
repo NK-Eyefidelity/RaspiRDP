@@ -22,6 +22,8 @@ packages:
   - dbus-x11
   - xfce4
   - task-xfce-desktop
+  - udiskie
+  - udisks2
 
 users:
   - name: administrator
@@ -97,6 +99,19 @@ runcmd:
   - cp /etc/xdg/openbox/rc.xml /home/administrator/.config/openbox/rc.xml
   - sed -i '/<context name="Root">/,/<\/context>/ s/<action name="ShowMenu"><menu>root-menu<\/menu><\/action>//g' /home/administrator/.config/openbox/rc.xml
 
+  # Desktop-Mausbindungen permanent deaktivieren
+  - |
+    python3 -c "
+    import re
+    path = '/home/administrator/.config/openbox/rc.xml'
+    with open(path, 'r') as f:
+        c = f.read()
+    c = re.sub(r'<number>\d+</number>', '<number>1</number>', c)
+    c = re.sub(r'(<context name=\"Desktop\">).*?(</context>)', r'\1\n</context>', c, flags=re.DOTALL)
+    with open(path, 'w') as f:
+    f.write(c)
+    "
+
   # Wrapper: entscheidet zwischen Kiosk und XFCE
   - |
     cat <<'EOF' > /usr/local/bin/kiosk-or-xfce.sh
@@ -133,6 +148,10 @@ runcmd:
     openbox &
     OB_PID=$!
 
+    # USB Auto-Mount Daemon starten
+    udiskie --no-tray --no-notify &
+    UDISKIE_PID=$!
+
     sleep 2
 
     cd /home/administrator/kiosk_dateien
@@ -143,6 +162,7 @@ runcmd:
         touch /home/administrator/.start_xfce_once
     fi
 
+    kill "$UDISKIE_PID" 2>/dev/null || true
     kill "$OB_PID" 2>/dev/null || true
     wait "$OB_PID" 2>/dev/null || true
     exit 0
