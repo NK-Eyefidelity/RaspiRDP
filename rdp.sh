@@ -52,13 +52,6 @@ if [ -f "$OPENBOX_CONF" ]; then
     openbox --reconfigure
 fi
 
-# 3. Virtual-Desktop-Bindungen in rc.xml deaktivieren
-if [ -f "$OPENBOX_RC" ]; then
-    sed -i 's/<number>[0-9]*<\/number>/<number>1<\/number>/g' "$OPENBOX_RC"
-    sed -i '/<context name="Desktop">/,/<\/context>/{/<context name="Desktop">/!{/<\/context>/!d}}' "$OPENBOX_RC"
-    openbox --reconfigure
-fi
-
 # Laufzeit-Fallback: Desktop-Anzahl per X11 erzwingen
 xprop -root -f _NET_NUMBER_OF_DESKTOPS 32c -set _NET_NUMBER_OF_DESKTOPS 1
 xprop -root -f _NET_CURRENT_DESKTOP 32c -set _NET_CURRENT_DESKTOP 0
