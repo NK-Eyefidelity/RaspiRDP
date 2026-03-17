@@ -224,6 +224,8 @@ while true; do
     # Neuen/Bestätigten Benutzernamen für das nächste Mal speichern
     echo "$USERNAME" > "$USER_FILE"
 
+    RDP_LOG=$(mktemp)
+
     # xfreerdp starten
     xfreerdp3 /v:"$RDP_IP" /d:"$RDP_DOMAIN" /u:"$USERNAME" /p:"$PASSWORD" /multimon /drive:USB,/media/administrator /multitransport /cache:bitmap:off,glyph:off /sec:nla /gdi:hw -fonts /gfx:thin-client,rfx /network:auto /cert:ignore /f 2> "$RDP_LOG"
 
