@@ -225,7 +225,7 @@ while true; do
     echo "$USERNAME" > "$USER_FILE"
 
     # xfreerdp starten
-    xfreerdp3 /v:"$RDP_IP" /d:"$RDP_DOMAIN" /u:"$USERNAME" /p:"$PASSWORD" /drive:USB,/media/administrator /multitransport /cache:bitmap:off,glyph:off /sec:nla /gdi:hw -fonts /gfx:thin-client,rfx /network:auto /cert:ignore /f
+    xfreerdp3 /v:"$RDP_IP" /d:"$RDP_DOMAIN" /u:"$USERNAME" /p:"$PASSWORD" /multimon /drive:USB,/media/administrator /multitransport /cache:bitmap:off,glyph:off /sec:nla /gdi:hw -fonts /gfx:thin-client,rfx /network:auto /cert:ignore /f
 
     RDP_EXIT=$?
 
