@@ -31,8 +31,7 @@ trap '' SIGINT SIGQUIT SIGTSTP
 # Verhindert X-Server Tastenkürzel (wie Strg+Alt+Backspace)
 setxkbmap -option srvrkeys:none
 
-# NEU: LXDE/Openbox Shortcuts temporär deaktivieren
-# 1. Lokale Config anlegen, falls sie noch nicht existiert
+# Lokale Openbox-Config anlegen, falls sie noch nicht existiert
 if [ ! -f "$OPENBOX_CONF" ]; then
     mkdir -p "$OPENBOX_DIR"
     if [ -f /etc/xdg/openbox/lxde-pi-rc.xml ]; then
@@ -42,7 +41,7 @@ if [ ! -f "$OPENBOX_CONF" ]; then
     fi
 fi
 
-# 2. Befehle für Terminal, Startmenü und Taskmanager durch ungültige Namen ersetzen
+# Shortcuts deaktivieren
 if [ -f "$OPENBOX_CONF" ]; then
     sed -i 's/lxterminal<\/command>/DISABLED_lxterminal<\/command>/g' "$OPENBOX_CONF"
     sed -i 's/x-terminal-emulator<\/command>/DISABLED_x-terminal-emulator<\/command>/g' "$OPENBOX_CONF"
@@ -59,8 +58,21 @@ xprop -root -f _NET_NUMBER_OF_DESKTOPS 32c -set _NET_NUMBER_OF_DESKTOPS 1
 xprop -root -f _NET_CURRENT_DESKTOP 32c -set _NET_CURRENT_DESKTOP 0
 
 # =====================
+# Ping-Status für Loginfenster
+# =====================
 
-# === Funktion für den Admin-Login ===
+update_ping_status() {
+    if ping -c 1 -W 1 "$RDP_IP" >/dev/null 2>&1; then
+        STATUS_DOT="<span foreground='green' size='x-large'>⬤</span>"
+    else
+        STATUS_DOT="<span foreground='red' size='x-large'>⬤</span>"
+    fi
+}
+
+# =====================
+# Funktion für den Admin-Login
+# =====================
+
 admin_unlock() {
     local ICON="$1"
 
@@ -77,9 +89,13 @@ admin_unlock() {
         --button="Kiosk beenden:0" \
         --undecorated)
 
-    # Wenn OK gedrückt wurde ($? -eq 0) UND das Passwort stimmt
     if [ $? -eq 0 ] && [ "$ADMIN_INPUT" = "$ADMIN_PASS" ]; then
-        yad --info --title="Erfolg" --text="\n Kiosk-Modus wird beendet...\n" --timeout=2 --no-buttons --undecorated
+        yad --info \
+            --title="Erfolg" \
+            --text="\n Kiosk-Modus wird beendet...\n" \
+            --timeout=2 \
+            --no-buttons \
+            --undecorated
 
         # Signale (Strg+C etc.) wieder aktivieren
         trap - SIGINT SIGQUIT SIGTSTP
@@ -87,43 +103,47 @@ admin_unlock() {
         # X-Server Tastenkürzel wieder auf Standard setzen
         setxkbmap -option
 
-        # LXDE/Openbox Shortcuts wieder in den Ursprungszustand versetzen
+        # Openbox-Shortcuts wiederherstellen
         if [ -f "$OPENBOX_CONF" ]; then
             sed -i 's/DISABLED_lxterminal<\/command>/lxterminal<\/command>/g' "$OPENBOX_CONF"
             sed -i 's/DISABLED_x-terminal-emulator<\/command>/x-terminal-emulator<\/command>/g' "$OPENBOX_CONF"
             sed -i 's/DISABLED_lxpanelctl menu<\/command>/lxpanelctl menu<\/command>/g' "$OPENBOX_CONF"
             sed -i 's/DISABLED_lxpanelctl run<\/command>/lxpanelctl run<\/command>/g' "$OPENBOX_CONF"
             sed -i 's/DISABLED_lxtask<\/command>/lxtask<\/command>/g' "$OPENBOX_CONF"
-
-            # Änderungen live anwenden
             openbox --reconfigure
         fi
 
         exit 0
     else
-        # Bei falschem Passwort oder Abbruch
-        yad --error --title="Fehler" --window-icon="$ICON" --text="\n Falsches Passwort oder abgebrochen!\n" --timeout=2 --no-buttons --undecorated
+        yad --error \
+            --title="Fehler" \
+            --window-icon="$ICON" \
+            --text="\n Falsches Passwort oder abgebrochen!\n" \
+            --timeout=2 \
+            --no-buttons \
+            --undecorated
         return 1
     fi
 }
 
 # =========================================
+# Hauptschleife
+# =========================================
 
-# Äußere Schleife: Neustart bei Verbindungs-/Passwortfehlern
 while true; do
 
-    # Endlosschleife für die Menüführung
     while true; do
 
-        # Fall 1: Wir haben einen bekannten letzten Nutzer
+        # Fall 1: Letzter Benutzer vorhanden
         if [ -n "$LAST_USER" ]; then
+            update_ping_status
 
             PASSWORD=$(yad --entry \
                 --title="RDP Login" \
                 --width=450 \
                 --borders=20 \
                 --image="$WINDOW_ICON" \
-                --text=" Willkommen zurück\n\n Anmeldung für: $RDP_IP\n Benutzer: $LAST_USER\n\n Bitte Passwort eingeben:" \
+                --text=" Willkommen zurück\n\n Anmeldung für: $RDP_IP   $STATUS_DOT\n Benutzer: $LAST_USER\n\n Bitte Passwort eingeben:" \
                 --text-align=left \
                 --hide-text \
                 --window-icon="$WINDOW_ICON" \
@@ -131,25 +151,33 @@ while true; do
                 --button="Abbrechen:1" \
                 --button="Benutzer ändern:2" \
                 --button="Verbinden:0" \
+                --timeout=60 \
                 --undecorated)
 
             EXIT_CODE=$?
 
+            # Benutzer ändern
             if [ $EXIT_CODE -eq 2 ]; then
                 LAST_USER=""
                 continue
             fi
 
-            # Wenn Abbrechen gedrückt wurde -> Admin-Check
+            # Timeout -> Fenster neu aufbauen, Ping neu prüfen
+            if [ $EXIT_CODE -eq 70 ]; then
+                continue
+            fi
+
+            # Abbrechen -> Admin-Check
             if [ $EXIT_CODE -ne 0 ]; then
                 admin_unlock "$WINDOW_ICON"
                 continue
             fi
 
-            # Wenn Passwort leer ist -> Fehler
             if [ -z "$PASSWORD" ]; then
-                yad --error --title="Fehler" \
-                    --width=400 --borders=20 \
+                yad --error \
+                    --title="Fehler" \
+                    --width=400 \
+                    --borders=20 \
                     --image="dialog-error" \
                     --text="\nDas Passwort darf nicht leer sein!\n" \
                     --text-align=center \
@@ -163,15 +191,17 @@ while true; do
             USERNAME="$LAST_USER"
             break
 
-        # Fall 2: Kein letzter Nutzer bekannt ODER "Benutzer ändern" wurde geklickt
+        # Fall 2: Neuer Benutzer
         else
+            update_ping_status
+
             FORM_OUTPUT=$(yad --form \
                 --title="RDP Login" \
                 --width=450 \
                 --borders=20 \
                 --image="$WINDOW_ICON" \
                 --separator="::::" \
-                --text=" Neue Anmeldung\n\n Bitte Anmeldedaten für $RDP_IP eingeben:\n" \
+                --text=" Neue Anmeldung\n\n Anmeldung für: $RDP_IP   $STATUS_DOT\n" \
                 --text-align=left \
                 --align=left \
                 --window-icon="$WINDOW_ICON" \
@@ -180,11 +210,17 @@ while true; do
                 --field=" Passwort:H" "" \
                 --button="Abbrechen:1" \
                 --button="Verbinden:0" \
+                --timeout=60 \
                 --undecorated)
 
             EXIT_CODE=$?
 
-            # Wenn Abbrechen gedrückt wurde -> Admin-Check
+            # Timeout -> Fenster neu aufbauen, Ping neu prüfen
+            if [ $EXIT_CODE -eq 70 ]; then
+                continue
+            fi
+
+            # Abbrechen -> Admin-Check
             if [ $EXIT_CODE -ne 0 ]; then
                 admin_unlock "$WINDOW_ICON"
                 continue
@@ -194,8 +230,10 @@ while true; do
             PASSWORD=$(echo "$FORM_OUTPUT" | awk -F'::::' '{print $2}')
 
             if [ -z "$USERNAME" ]; then
-                yad --error --title="Fehler" \
-                    --width=400 --borders=20 \
+                yad --error \
+                    --title="Fehler" \
+                    --width=400 \
+                    --borders=20 \
                     --text="\nDer Benutzername darf nicht leer sein!\n" \
                     --text-align=center \
                     --window-icon="$WINDOW_ICON" \
@@ -205,10 +243,11 @@ while true; do
                 continue
             fi
 
-            # Wenn Passwort leer ist -> Fehler
             if [ -z "$PASSWORD" ]; then
-                yad --error --title="Fehler" \
-                    --width=400 --borders=20 \
+                yad --error \
+                    --title="Fehler" \
+                    --width=400 \
+                    --borders=20 \
                     --image="dialog-error" \
                     --text="\nDas Passwort darf nicht leer sein!\n" \
                     --text-align=center \
@@ -259,7 +298,8 @@ while true; do
             ;;
         *)
             rm -f "$RDP_LOG"
-            yad --error --title="Verbindungsfehler" \
+            yad --error \
+                --title="Verbindungsfehler" \
                 --width=450 \
                 --borders=20 \
                 --image="dialog-error" \
