@@ -225,25 +225,37 @@ while true; do
     echo "$USERNAME" > "$USER_FILE"
 
     # xfreerdp starten
-    xfreerdp3 /v:"$RDP_IP" /d:"$RDP_DOMAIN" /u:"$USERNAME" /p:"$PASSWORD" /multimon /drive:USB,/media/administrator /multitransport /cache:bitmap:off,glyph:off /sec:nla /gdi:hw -fonts /gfx:thin-client,rfx /network:auto /cert:ignore /f
+    xfreerdp3 /v:"$RDP_IP" /d:"$RDP_DOMAIN" /u:"$USERNAME" /p:"$PASSWORD" /multimon /drive:USB,/media/administrator /multitransport /cache:bitmap:off,glyph:off /sec:nla /gdi:hw -fonts /gfx:thin-client,rfx /network:auto /cert:ignore /f 2> "$RDP_LOG"
 
     RDP_EXIT=$?
 
-    if [ $RDP_EXIT -eq 0 ]; then
+    if grep -q "ERRINFO_LOGOFF_BY_USER" "$RDP_LOG"; then
+    rm -f "$RDP_LOG"
+    LAST_USER="$USERNAME"
+    continue
+   fi
+
+   case "$RDP_EXIT" in
+        0|11|12|15|255)
+        rm -f "$RDP_LOG"
+        LAST_USER="$USERNAME"
         continue
-    else
+        ;;
+    *)
+        rm -f "$RDP_LOG"
         yad --error --title="Verbindungsfehler" \
-            --width=450 \
-            --borders=20 \
-            --image="dialog-error" \
-            --text=" Verbindung fehlgeschlagen!\n\n Bitte prüfen Sie Ihr Passwort, Benutzername\n oder die Netzwerkverbindung." \
-            --text-align=left \
-            --window-icon="$WINDOW_ICON" \
-            --buttons-layout=center \
-            --button="Erneut versuchen:0" \
-            --undecorated
+        --width=450 \
+        --borders=20 \
+        --image="dialog-error" \
+        --text=" Verbindung fehlgeschlagen!\n\n Bitte prüfen Sie Ihr Passwort, Benutzername\n oder die Netzwerkverbindung." \
+        --text-align=left \
+        --window-icon="$WINDOW_ICON" \
+        --buttons-layout=center \
+        --button="Erneut versuchen:0" \
+        --undecorated
 
         LAST_USER="$USERNAME"
-    fi
+        ;;
+esac
 
 done
