@@ -279,6 +279,9 @@ while true; do
         /gfx:thin-client,rfx \
         /network:auto \
         /cert:ignore \
+        /usb:auto \
+        /sound:sys:pulse,rate:44100 \
+        /microphone:sys:pulse,rate:44100 \
         /f \
         > "$RDP_LOG" 2>&1
 
